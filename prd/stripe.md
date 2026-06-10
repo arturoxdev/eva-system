@@ -1,6 +1,6 @@
 # PRD — Sistema de Billing por Umbral con Stripe
 
-**Proyecto**: call-system
+**Proyecto**: eva
 **Fecha**: 2026-04-12
 **Status**: Draft v4
 **Owner**: Arturo
@@ -9,7 +9,7 @@
 
 ## 1. Contexto y objetivo
 
-El `call-system` actual registra llamadas y calcula un cobro operativo por llamada a partir de `business_config.price_per_call`, pero el cobro al cliente final sigue siendo manual / fuera del sistema.
+El `eva` actual registra llamadas y calcula un cobro operativo por llamada a partir de `business_config.price_per_call`, pero el cobro al cliente final sigue siendo manual / fuera del sistema.
 
 Este PRD define un sistema de **cobro automatizado por umbral** usando Stripe, con estas metas:
 

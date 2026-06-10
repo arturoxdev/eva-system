@@ -1,1 +1,2 @@
 - [Billing state model](project_billing_state_model.md) — Billing column es derivada (no persistida); sólo `disconnection_reason='user_hangup'` crea ledger
+- [Diagnosis gotchas](reference_diagnosis_gotchas.md) — Warning SSL de pg es benigno; .mts rompe db.query en scripts tsx; receta curl para probar login

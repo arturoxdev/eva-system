@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import bcryptjs from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { normalizeEmail } from "@/lib/utils";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -15,18 +16,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const email = normalizeEmail(credentials.email as string);
+
         const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string),
+          where: eq(users.email, email),
         });
 
-        if (!user || !user.isActive) return null;
+        // Server-side only: never surface the rejection reason to the client.
+        if (!user) {
+          console.warn(`[auth] Login rejected: no user with email ${email}`);
+          return null;
+        }
+
+        if (!user.isActive) {
+          console.warn(`[auth] Login rejected: user ${email} is inactive`);
+          return null;
+        }
 
         const passwordMatch = await bcryptjs.compare(
           credentials.password as string,
           user.password
         );
 
-        if (!passwordMatch) return null;
+        if (!passwordMatch) {
+          console.warn(`[auth] Login rejected: wrong password for ${email}`);
+          return null;
+        }
 
         return {
           id: user.id,

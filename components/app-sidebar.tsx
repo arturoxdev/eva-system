@@ -89,8 +89,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Lola" className="size-6" />
-          <span className="text-lg font-semibold">Lola</span>
+          <img src="/logo.svg" alt="Eva" className="size-6" />
+          <span className="text-lg font-semibold">Eva</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

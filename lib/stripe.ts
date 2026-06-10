@@ -14,7 +14,7 @@ if (!secret) {
 export const stripe = new Stripe(secret ?? "sk_test_unset", {
   typescript: true,
   appInfo: {
-    name: "call-system",
+    name: "eva",
   },
 });
 
