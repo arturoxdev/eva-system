@@ -34,7 +34,7 @@ export default async function OnboardingLayout({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.svg" alt="" className="size-4" />
-            Lola
+            Eva
           </Link>
           <ChevronRightIcon className="size-3.5 text-muted-foreground/60" />
           <Link href="/companies" className="hover:text-foreground">

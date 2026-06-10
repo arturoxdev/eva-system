@@ -46,7 +46,7 @@ function UnavailableCard() {
         <CardHeader className="flex flex-col items-center gap-3 pt-2 text-center">
           <Image
             src={logo}
-            alt="Lola"
+            alt="Eva"
             width={56}
             height={56}
             className="size-14"
@@ -98,7 +98,7 @@ export default async function AudioCallPage({
         <CardHeader className="flex flex-col items-center gap-3 pt-2 text-center">
           <Image
             src={logo}
-            alt="Lola"
+            alt="Eva"
             width={56}
             height={56}
             className="size-14"

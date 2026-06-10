@@ -12,7 +12,7 @@ import { verifyN8nSecret } from "@/lib/webhook-auth";
 import { mapCallEndedPayload } from "@/lib/calls/map-call-ended-payload";
 import { buildPublicRecordingLink } from "@/lib/public-recording-link";
 
-// ADR-004/006: payload comes from n8n (Retell → n8n → Lola). Auth is a shared
+// ADR-004/006: payload comes from n8n (Retell → n8n → Eva). Auth is a shared
 // bearer secret. Since ADR-006, call_ended is the single ingestion webhook:
 // it carries customer data, metadata, and transcript in one event.
 export async function POST(request: Request) {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   // ADR-004 #4 (kept by ADR-006): n8n unwraps Retell's `[{...}]` array before
-  // sending. Lola only accepts a flat object; arrays are rejected with 400.
+  // sending. Eva only accepts a flat object; arrays are rejected with 400.
   if (Array.isArray(payload)) {
     return NextResponse.json(
       { error: "expected object, got array" },

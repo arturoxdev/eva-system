@@ -1,6 +1,6 @@
 ---
 name: Billing state model — derived, not persisted
-description: Cómo se calcula el estado Billing (Pending/Charged/Marked non-billable/Not billable/Partial) en call-system y dónde vive cada pieza
+description: Cómo se calcula el estado Billing (Pending/Charged/Marked non-billable/Not billable/Partial) en eva y dónde vive cada pieza
 type: project
 ---
 

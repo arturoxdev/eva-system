@@ -1,4 +1,4 @@
-# Call System
+# Eva
 
 Next.js app for managing Retell call ingestion, per-company billing, and Stripe invoicing.
 
