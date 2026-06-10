@@ -14,7 +14,7 @@ El webhook `/api/webhooks/call-ended` hoy recibe directamente desde Retell:
 
 Dos cambios fuerzan la evolución:
 
-1. **n8n se intercala como capa de preprocesamiento.** El nuevo flujo es `Retell → n8n → Lola`. n8n masajea el payload de Retell antes de mandarlo: aplana el array de `transcription_object` a `[{role, content}]`, normaliza `call_cost` a decimal en dólares (ya cubierto por ADR-003), y agrega `name`, `summary`, `from_number` extraídos de la conversación.
+1. **n8n se intercala como capa de preprocesamiento.** El nuevo flujo es `Retell → n8n → Eva`. n8n masajea el payload de Retell antes de mandarlo: aplana el array de `transcription_object` a `[{role, content}]`, normaliza `call_cost` a decimal en dólares (ya cubierto por ADR-003), y agrega `name`, `summary`, `from_number` extraídos de la conversación.
 2. **Necesidad de persistir el transcript** para pintarlo en el detail sheet a futuro. Hoy se pierde al ack del webhook.
 
 Como el payload ya no viene de Retell, la firma `x-retell-signature` deja de existir. El endpoint quedaría abierto sin reemplazo, lo cual es serio: un POST con un `agent_id` válido y un `disconnection_reason` facturable inserta una entrada de ledger, mueve `current_balance_cents`, y la siguiente corrida de cron factura al cliente real. (`/api/webhooks/call-data` ya está sin auth — deuda preexistente que se hereda al call-ended si no se cierra.)
@@ -31,7 +31,7 @@ Como el payload ya no viene de Retell, la firma `x-retell-signature` deja de exi
 
 ## Razón
 
-- **Shared secret > HMAC con timestamp** para este caso. n8n y Lola están bajo el mismo control operativo, no hay terceros consumiendo. HMAC + timestamp tolerance defiende contra replay attacks que hoy no son un vector real (n8n no expone su outbound payload a terceros). Costo de fricción extra (manejo de timestamp + tolerance + clock skew) sin beneficio concreto.
+- **Shared secret > HMAC con timestamp** para este caso. n8n y Eva están bajo el mismo control operativo, no hay terceros consumiendo. HMAC + timestamp tolerance defiende contra replay attacks que hoy no son un vector real (n8n no expone su outbound payload a terceros). Costo de fricción extra (manejo de timestamp + tolerance + clock skew) sin beneficio concreto.
 - **Eliminar firma Retell sin reemplazo no es opción.** El endpoint dispara cargas reales a clientes vía `billing_ledger`. Dejarlo abierto es regalar un vector de fraude trivial.
 - **Cubrir `call-data` en el mismo PR** evita una ventana donde solo uno de los dos webhooks está protegido. Si fixeamos solo `call-ended`, el atacante apunta a `call-data` y igual mete registros falsos en `calls` (sin ledger entry, pero contaminando la tabla).
 - **`jsonb` para `transcript`** alinea con ADR-003: dato estructurado, queryable, tipado nativamente por Drizzle. `text` con `JSON.stringify` repite el patrón que ADR-003 ya señaló como deuda.

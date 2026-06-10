@@ -17,7 +17,7 @@ El término "call_id" de la petición era ambiguo entre el `calls.id` interno (U
 2. **`proxy.ts`**: añadir `/audio-call` al allowlist público (primera ruta de *página* pública del sistema).
 3. **Identificador**: el `<id>` de la URL es el **`calls.id` interno (UUID)**, no el `callId` de Retell.
 4. **Minimización de datos**: el servidor selecciona **solo** lo necesario para reproducir (`audio_url`, `created_at` para expiración, fecha/duración neutrales). Nunca transcript, costo, billing ni campos de cliente.
-5. **UI**: logo de Lola + título neutro ("Grabación de llamada") + fecha + el mismo reproductor del detalle (`InlineAudioPlayer`, **extraído** a componente compartido con `className` configurable). **Sin** botón de descarga. Mobile-first, tokens de diseño existentes, tema claro como `/login`.
+5. **UI**: logo de Eva + título neutro ("Grabación de llamada") + fecha + el mismo reproductor del detalle (`InlineAudioPlayer`, **extraído** a componente compartido con `className` configurable). **Sin** botón de descarga. Mobile-first, tokens de diseño existentes, tema claro como `/login`.
 6. **Entrega del audio**: el `<audio src>` apunta **directo a la URL de Retell**, igual que hoy en el detalle.
 7. **Estados no reproducibles** (UUID inexistente, **Call** sin `audio_url`, o **Recording** expirada >30 días): un **único mensaje genérico** "Esta grabación no está disponible"; no se revela cuál de los tres ni si la **Call** existe.
 8. **Indexación**: `robots: noindex, nofollow` en el metadata de la ruta.
@@ -32,7 +32,7 @@ El término "call_id" de la petición era ambiguo entre el `calls.id` interno (U
 - **URL directa de Retell**: simplicidad y consistencia con "el mismo reproductor de hoy"; el reproductor funciona igual con o sin proxy.
 - **Sin descarga**: reduce la redistribución trivial del archivo en un link público de audiencia amplia (el detalle autenticado sí la conserva).
 - **`url` ya armado (no solo `id`)**: n8n lo pidió listo para usar, así no hardcodea el host en su flujo. Coste asumido: acopla el webhook a `AUTH_URL`.
-- **`AUTH_URL` y no el `origin` del request**: el webhook es server-to-server (Retell → n8n → Lola); el header `origin` no es fiable. `AUTH_URL` es la convención ya usada (`return_url` del webhook de Stripe).
+- **`AUTH_URL` y no el `origin` del request**: el webhook es server-to-server (Retell → n8n → Eva); el header `origin` no es fiable. `AUTH_URL` es la convención ya usada (`return_url` del webhook de Stripe).
 - **Link en todos los caminos con fila de Call**: la **Recording** existe independientemente del billing, así que n8n recibe el link igual en `pending`, `void` y `no_ledger`.
 
 ## Alternativas descartadas

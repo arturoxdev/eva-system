@@ -149,7 +149,7 @@ _Avoid_: "prefijo", "código de ciudad", "lada".
 ## Flagged ambiguities
 
 - **"Non-billable"** se usaba ambiguo para "sistema la filtró" y "humano la excluyó". Resolución original (ADR-001 era): celda `—` = sistema; badge **Marked non-billable** = humano. **Re-resuelto por ADR-007**: el badge **Marked non-billable** (`ledger.status = 'void'`) ahora cubre **ambos** orígenes — humano (`voidedBy = userId`) y sistema por **Minimum billable duration** (`voidedBy = null`). La celda `—` queda solo para llamadas sin **Ledger entry** (disconnection no-billable o sin compañía).
-- **"Webhook de Encode"** es un alias informal del webhook de ingesta real `call_ended` (Retell → n8n → Lola). No existe ningún "Encode" en código. Resuelto: usar siempre `call_ended`.
+- **"Webhook de Encode"** es un alias informal del webhook de ingesta real `call_ended` (Retell → n8n → Eva). No existe ningún "Encode" en código. Resuelto: usar siempre `call_ended`.
 - **"Status"** estaba sobrecargado en `/calls`: la columna existente muestra `callStatus` de Retell, y los billing states también son "estados". Resuelto: la columna existente sigue siendo "Status" (Retell); la nueva columna se llama "Billing".
 - **"Charge"** vs **"Bill"**: el código usa `charge` para la operación de cobro vía Stripe (`charge-cron.ts`); la UI usa "Billing" como sección. Mantener: `charge` = verbo/operación; "Billing" = concepto/sección de UI.
 - **"Partial call" / badge "Partial"** existían porque una **Call** se llenaba en dos webhooks (`call_data` luego `call_ended`) y podía quedar a medias. Resuelto: `call_data` se deprecó; ahora `call_ended` trae todo en un solo payload. El concepto, el badge, y las columnas `webhook1_received`/`webhook2_received` se eliminaron. Ver ADR-006.

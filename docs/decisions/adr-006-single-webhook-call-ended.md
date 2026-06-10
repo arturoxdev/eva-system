@@ -16,9 +16,9 @@ Consecuencia de dominio: si `call_data` desaparece, toda **Call** nace directo d
 ## Decisión
 
 1. **Eliminar `/api/webhooks/call-data/route.ts`.** n8n deja de llamarlo (está bajo control operativo propio, ADR-004); no hay consumidores externos. Un POST extraviado da 404.
-2. **`call_ended` sigue recibiendo objeto plano, no array.** El payload crudo de Retell viene envuelto en `[{...}]`; **n8n lo desenvuelve** antes de mandarlo a Lola. La decisión #4 de ADR-004 (rechazar arrays con 400) **se mantiene intacta**.
-3. **n8n es el único responsable del mapeo de nombres de campo.** Lola lee los nombres ya normalizados por n8n (`name`, `service`, `address`, `city`, `zipcode`, `phone`, `summary`, `recording_url`, `call_cost`, `transcription_object`, etc.). Consistente con ADR-004 (n8n ya es la capa de transformación).
-4. **n8n convierte el sentinel `"Not provided"` de Retell a `null` (u omite el campo).** Lola no conoce ese sentinel. Mantiene la columna en `NULL` → UI muestra `—` → la regla no-sobrescribir sigue permitiendo corrección manual futura.
+2. **`call_ended` sigue recibiendo objeto plano, no array.** El payload crudo de Retell viene envuelto en `[{...}]`; **n8n lo desenvuelve** antes de mandarlo a Eva. La decisión #4 de ADR-004 (rechazar arrays con 400) **se mantiene intacta**.
+3. **n8n es el único responsable del mapeo de nombres de campo.** Eva lee los nombres ya normalizados por n8n (`name`, `service`, `address`, `city`, `zipcode`, `phone`, `summary`, `recording_url`, `call_cost`, `transcription_object`, etc.). Consistente con ADR-004 (n8n ya es la capa de transformación).
+4. **n8n convierte el sentinel `"Not provided"` de Retell a `null` (u omite el campo).** Eva no conoce ese sentinel. Mantiene la columna en `NULL` → UI muestra `—` → la regla no-sobrescribir sigue permitiendo corrección manual futura.
 5. **`call_ended` puebla los campos de cliente** (`customerName`, `service`, `customerAddress`, `customerCity`, `customerZipcode`, `customerPhone`) que antes ponía `call_data`.
 6. **`callDate` se deriva de `start_timestamp`** dentro de `call_ended` (epoch ms → fecha), reemplazando el `date` que mandaba `call_data`.
 7. **Eliminar el concepto "Partial" por completo:** quitar el valor `"Partial"` de `BillingState` y de `deriveBillingState` (que deja de depender de webhooks y pasa a ser puramente función del ledger), hacer `DROP COLUMN` de `webhook1_received` y `webhook2_received`, y borrar los términos `Partial call` / badge `Partial` de `CONTEXT.md`.
@@ -26,8 +26,8 @@ Consecuencia de dominio: si `call_data` desaparece, toda **Call** nace directo d
 ## Razón
 
 - **La premisa que mató la consolidación en ADR-004 ya no aplica.** El payload nuevo trae los datos de cliente. Mantener dos webhooks ahora solo conserva la ventana **Partial** sin ningún beneficio.
-- **n8n desenvuelve el array (no Lola)** preserva la decisión #4 de ADR-004 sin reabrirla: el contrato de Lola ("solo objeto plano, array → 400") no se toca; el cambio queda contenido en n8n, que ya es la capa de transformación.
-- **n8n dueño del mapeo y del sentinel** mantiene a Lola desacoplada del shape crudo de Retell, exactamente el espíritu de ADR-004 (Lola no debe conocer `full_name` ni `"Not provided"`).
+- **n8n desenvuelve el array (no Eva)** preserva la decisión #4 de ADR-004 sin reabrirla: el contrato de Eva ("solo objeto plano, array → 400") no se toca; el cambio queda contenido en n8n, que ya es la capa de transformación.
+- **n8n dueño del mapeo y del sentinel** mantiene a Eva desacoplada del shape crudo de Retell, exactamente el espíritu de ADR-004 (Eva no debe conocer `full_name` ni `"Not provided"`).
 - **Eliminar "Partial" entero, no dejarlo como código muerto.** Sin `call_data` el estado es inalcanzable; un badge que nunca se pinta y dos columnas siempre-constantes son deuda que confunde al próximo lector. Drop limpio.
 - **`callDate` desde `start_timestamp`** es más preciso que el fallback a `createdAt` (que es el momento de inserción del row, no el inicio real de la llamada) y el dato ya viaja en el payload.
 
@@ -35,8 +35,8 @@ Consecuencia de dominio: si `call_data` desaparece, toda **Call** nace directo d
 
 | Alternativa | Por qué se descartó |
 |---|---|
-| Aceptar array `[{...}]` en `call_ended` (Lola lo desenvuelve) | Reabriría la decisión #4 de ADR-004 (rechazada ahí con razones aún válidas). n8n ya transforma el payload — desenvolver ahí es de menor costo y no acopla Lola al shape de Retell. |
-| Lola mapea nombres crudos (`full_name`→`customerName`, etc.) | Acopla Lola al shape de Retell. ADR-004 ya estableció a n8n como la capa de normalización; partir esa responsabilidad es incoherente. |
+| Aceptar array `[{...}]` en `call_ended` (Eva lo desenvuelve) | Reabriría la decisión #4 de ADR-004 (rechazada ahí con razones aún válidas). n8n ya transforma el payload — desenvolver ahí es de menor costo y no acopla Eva al shape de Retell. |
+| Eva mapea nombres crudos (`full_name`→`customerName`, etc.) | Acopla Eva al shape de Retell. ADR-004 ya estableció a n8n como la capa de normalización; partir esa responsabilidad es incoherente. |
 | Guardar el literal `"Not provided"` | Es string no-vacío → `hasValue()` lo trata como dato real → bloquea edición manual futura (rationale (2) de ADR-004) y la UI muestra "Not provided" en vez de `—`. |
 | Conservar `webhook1_received`/`webhook2_received` como histórico | Sin `call_data` nunca vuelven a variar. Columnas constantes que sugieren un flujo de dos fases que ya no existe. |
 | Tombstone 410 en `call-data` por un ciclo | n8n está bajo control propio; se reconfigura en el mismo deploy. El 410 solo difiere el borrado sin agregar señal real. |
@@ -51,9 +51,9 @@ Consecuencia de dominio: si `call_data` desaparece, toda **Call** nace directo d
 - **`/customers` depende de `customerPhone`.** El payload incluye `phone` y `from_number` (mismo valor); n8n debe mandarlo siempre como `phone` o la página de Customers queda vacía para llamadas nuevas.
 - **Docs pendientes:** `docs/flows.md` (Flujo 1 describe dos webhooks — debe pasar a uno) y `docs/database.md` (filas `webhook1_received`/`webhook2_received` a remover). Se difiere al PR de implementación.
 
-## Tabla de renombrado para n8n (Retell crudo → lo que debe mandar a Lola)
+## Tabla de renombrado para n8n (Retell crudo → lo que debe mandar a Eva)
 
-| Campo Retell (crudo) | Campo a mandar a Lola | Nota |
+| Campo Retell (crudo) | Campo a mandar a Eva | Nota |
 |---|---|---|
 | `full_name` | `name` | `"Not provided"` → `null` |
 | `service_needed` | `service` | `"Not provided"` → `null` |
@@ -63,8 +63,8 @@ Consecuencia de dominio: si `call_data` desaparece, toda **Call** nace directo d
 | `phone` / `from_number` | `phone` | siempre presente; llave de Customers |
 | `summary` | `summary` | — |
 | `call_cost` | `call_cost` | número decimal USD (ADR-003) |
-| `recording_url` | `recording_url` | Lola también acepta `audio_url` |
-| `transcription_object` | `transcription_object` | Lola lo filtra a `[{role, content}]` |
-| `start_timestamp` | `start_timestamp` | Lola deriva `callDate` de aquí |
+| `recording_url` | `recording_url` | Eva también acepta `audio_url` |
+| `transcription_object` | `transcription_object` | Eva lo filtra a `[{role, content}]` |
+| `start_timestamp` | `start_timestamp` | Eva deriva `callDate` de aquí |
 | `end_timestamp`, `duration_ms`, `disconnection_reason`, `call_status`, `event`, `call_id`, `agent_id` | (igual) | sin cambio |
 | (el array envoltorio `[ … ]`) | — | **n8n lo desenvuelve**: manda `{...}`, no `[{...}]` |
