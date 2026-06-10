@@ -40,7 +40,7 @@ All of these read `DATABASE_URL` from `.env`.
 | `npm run db:migrate` | Apply pending migrations to the target database. |
 | `npm run db:push` | Push the current schema directly (no migration files — dev only). |
 | `npm run db:studio` | Open Drizzle Studio to browse the DB in a web UI. |
-| `npm run db:seed` | Insert the base `root@callsystem.com` user and a default `business_config` row (`pricePerCallCents=100`, `billingThresholdCents=5000`). Run once on a fresh database. |
+| `npm run db:seed` | Upsert the base root user (`root@eva.com` / `admin123`) and ensure a default `business_config` row (`pricePerCallCents=100`, `billingThresholdCalls=25`). Idempotent — safe to re-run; resets the root password. |
 
 Example:
 

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, companies } from "@/lib/db/schema";
 import { getSessionUser, isAgencyRole } from "@/lib/auth-helpers";
 import { generatePassword } from "@/lib/password";
+import { normalizeEmail } from "@/lib/utils";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -43,7 +44,8 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { email, role, companyId, password: customPassword } = body;
+  const { email: rawEmail, role, companyId, password: customPassword } = body;
+  const email = rawEmail ? normalizeEmail(rawEmail) : rawEmail;
 
   if (!email || !role) {
     return NextResponse.json({ error: "email and role are required" }, { status: 400 });

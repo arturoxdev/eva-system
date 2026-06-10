@@ -3,6 +3,7 @@ import bcryptjs from "bcryptjs";
 import { db } from "@/lib/db";
 import { companies, users } from "@/lib/db/schema";
 import type { NotificationPhone } from "@/lib/notification-phones";
+import { normalizeEmail } from "@/lib/utils";
 
 export class EmailAlreadyExistsError extends Error {
   constructor(public readonly email: string) {
@@ -29,16 +30,17 @@ export async function onboardCompany(
   input: OnboardCompanyInput
 ): Promise<OnboardCompanyResult> {
   const hashedPassword = await bcryptjs.hash(input.userPassword, 10);
+  const userEmail = normalizeEmail(input.userEmail);
 
   return await db.transaction(async (tx) => {
     const existing = await tx
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.email, input.userEmail))
+      .where(eq(users.email, userEmail))
       .limit(1);
 
     if (existing.length > 0) {
-      throw new EmailAlreadyExistsError(input.userEmail);
+      throw new EmailAlreadyExistsError(userEmail);
     }
 
     const [company] = await tx
@@ -54,7 +56,7 @@ export async function onboardCompany(
     const [user] = await tx
       .insert(users)
       .values({
-        email: input.userEmail,
+        email: userEmail,
         password: hashedPassword,
         role: "staff_admin",
         companyId: company.id,
