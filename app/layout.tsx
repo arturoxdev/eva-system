@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lola",
+  title: "Eva",
   description: "Dashboard for managing voice agent calls",
 };
 

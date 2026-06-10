@@ -49,7 +49,7 @@ export default function LoginPage() {
         <CardHeader className="flex flex-col items-center gap-3 pt-2 text-center">
           <Image
             src={logo}
-            alt="Lola"
+            alt="Eva"
             width={56}
             height={56}
             className="size-14"
@@ -59,7 +59,7 @@ export default function LoginPage() {
             <CardTitle className="text-xl font-semibold tracking-tight">
               Welcome back
             </CardTitle>
-            <CardDescription>Sign in to your Lola account.</CardDescription>
+            <CardDescription>Sign in to your Eva account.</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
