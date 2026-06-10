@@ -53,86 +53,142 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log(
+    "[call-ended] persistence_started",
+    JSON.stringify({
+      call_id,
+      agent_id,
+      event,
+    })
+  );
+
   const mapped = mapCallEndedPayload(callObj);
-
-  const agent = await db.query.retellNumbers.findFirst({
-    where: eq(retellNumbers.agentId, agent_id),
-  });
-  const companyId = agent?.companyId ?? null;
-
-  const existing = await db.query.calls.findFirst({
-    where: and(eq(calls.callId, call_id), eq(calls.agentId, agent_id)),
-  });
-
+  let companyId: string | null = null;
   let callRowId: string;
-  if (existing) {
-    await db
-      .update(calls)
-      .set({
-        event: mapped.event ?? event,
-        retellEvent: "call_ended",
-        callStatus: mapped.callStatus,
-        disconnectionReason: mapped.disconnectionReason,
-        startTimestamp: mapped.startTimestamp,
-        endTimestamp: mapped.endTimestamp,
-        durationMs: mapped.durationMs,
-        audioUrl: mapped.audioUrl,
-        retellCost: mapped.retellCost,
-        companyId: companyId ?? existing.companyId,
-        // ADR-004 #6 (kept by ADR-006): the "don't overwrite if already
-        // populated" rule now guards against n8n reprocess/retry and future
-        // manual edits. Only fill when the existing column is null/blank.
-        customerName: hasValue(existing.customerName)
-          ? existing.customerName
-          : mapped.customerName,
-        customerPhone: hasValue(existing.customerPhone)
-          ? existing.customerPhone
-          : mapped.customerPhone,
-        summary: hasValue(existing.summary)
-          ? existing.summary
-          : mapped.summary,
-        // Remaining customer fields: keep prior value when the payload omits
-        // it so a partial retry can't wipe good data.
-        customerAddress: mapped.customerAddress ?? existing.customerAddress,
-        customerCity: mapped.customerCity ?? existing.customerCity,
-        customerZipcode: mapped.customerZipcode ?? existing.customerZipcode,
-        service: mapped.service ?? existing.service,
-        callDate: mapped.callDate ?? existing.callDate,
-        // Transcript always takes the fresh version when the payload brings
-        // a non-empty array; otherwise keep the previous value.
-        transcript: mapped.transcript ?? existing.transcript,
-        updatedAt: new Date(),
+
+  try {
+    const agent = await db.query.retellNumbers.findFirst({
+      where: eq(retellNumbers.agentId, agent_id),
+    });
+    companyId = agent?.companyId ?? null;
+
+    const existing = await db.query.calls.findFirst({
+      where: and(eq(calls.callId, call_id), eq(calls.agentId, agent_id)),
+    });
+
+    if (existing) {
+      await db
+        .update(calls)
+        .set({
+          event: mapped.event ?? event,
+          retellEvent: "call_ended",
+          callStatus: mapped.callStatus,
+          disconnectionReason: mapped.disconnectionReason,
+          startTimestamp: mapped.startTimestamp,
+          endTimestamp: mapped.endTimestamp,
+          durationMs: mapped.durationMs,
+          audioUrl: mapped.audioUrl,
+          retellCost: mapped.retellCost,
+          companyId: companyId ?? existing.companyId,
+          // ADR-004 #6 (kept by ADR-006): the "don't overwrite if already
+          // populated" rule now guards against n8n reprocess/retry and future
+          // manual edits. Only fill when the existing column is null/blank.
+          customerName: hasValue(existing.customerName)
+            ? existing.customerName
+            : mapped.customerName,
+          customerPhone: hasValue(existing.customerPhone)
+            ? existing.customerPhone
+            : mapped.customerPhone,
+          summary: hasValue(existing.summary)
+            ? existing.summary
+            : mapped.summary,
+          // Remaining customer fields: keep prior value when the payload omits
+          // it so a partial retry can't wipe good data.
+          customerAddress: mapped.customerAddress ?? existing.customerAddress,
+          customerCity: mapped.customerCity ?? existing.customerCity,
+          customerZipcode: mapped.customerZipcode ?? existing.customerZipcode,
+          service: mapped.service ?? existing.service,
+          callDate: mapped.callDate ?? existing.callDate,
+          // Transcript always takes the fresh version when the payload brings
+          // a non-empty array; otherwise keep the previous value.
+          transcript: mapped.transcript ?? existing.transcript,
+          updatedAt: new Date(),
+        })
+        .where(eq(calls.id, existing.id));
+      callRowId = existing.id;
+    } else {
+      const inserted = await db
+        .insert(calls)
+        .values({
+          callId: call_id,
+          agentId: agent_id,
+          companyId,
+          event: mapped.event ?? event,
+          retellEvent: "call_ended",
+          callStatus: mapped.callStatus,
+          disconnectionReason: mapped.disconnectionReason,
+          startTimestamp: mapped.startTimestamp,
+          endTimestamp: mapped.endTimestamp,
+          durationMs: mapped.durationMs,
+          audioUrl: mapped.audioUrl,
+          retellCost: mapped.retellCost,
+          customerName: mapped.customerName,
+          customerPhone: mapped.customerPhone,
+          customerAddress: mapped.customerAddress,
+          customerCity: mapped.customerCity,
+          customerZipcode: mapped.customerZipcode,
+          service: mapped.service,
+          summary: mapped.summary,
+          callDate: mapped.callDate,
+          transcript: mapped.transcript,
+        })
+        .returning({ id: calls.id });
+      callRowId = inserted[0].id;
+    }
+
+    const persistedCall = await db.query.calls.findFirst({
+      where: eq(calls.id, callRowId),
+    });
+
+    if (!persistedCall) {
+      throw new Error("call row not found after upsert");
+    }
+
+    console.log(
+      "[call-ended] persistence_succeeded",
+      JSON.stringify({
+        call_id,
+        agent_id,
+        call_row_id: persistedCall.id,
+        action: existing ? "updated" : "inserted",
+        company_id: persistedCall.companyId,
+        call_status: persistedCall.callStatus,
+        duration_ms: persistedCall.durationMs,
+        has_audio_url: hasValue(persistedCall.audioUrl),
+        has_summary: hasValue(persistedCall.summary),
+        has_customer_name: hasValue(persistedCall.customerName),
+        has_customer_phone: hasValue(persistedCall.customerPhone),
+        transcript_items: Array.isArray(persistedCall.transcript)
+          ? persistedCall.transcript.length
+          : 0,
       })
-      .where(eq(calls.id, existing.id));
-    callRowId = existing.id;
-  } else {
-    const inserted = await db
-      .insert(calls)
-      .values({
-        callId: call_id,
-        agentId: agent_id,
-        companyId,
-        event: mapped.event ?? event,
-        retellEvent: "call_ended",
-        callStatus: mapped.callStatus,
-        disconnectionReason: mapped.disconnectionReason,
-        startTimestamp: mapped.startTimestamp,
-        endTimestamp: mapped.endTimestamp,
-        durationMs: mapped.durationMs,
-        audioUrl: mapped.audioUrl,
-        retellCost: mapped.retellCost,
-        customerName: mapped.customerName,
-        customerPhone: mapped.customerPhone,
-        customerAddress: mapped.customerAddress,
-        customerCity: mapped.customerCity,
-        customerZipcode: mapped.customerZipcode,
-        service: mapped.service,
-        summary: mapped.summary,
-        callDate: mapped.callDate,
-        transcript: mapped.transcript,
+    );
+  } catch (error) {
+    console.error(
+      "[call-ended] persistence_failed",
+      JSON.stringify({
+        call_id,
+        agent_id,
+        company_id: companyId,
+        error_message: getErrorMessage(error),
+        error_stack: error instanceof Error ? error.stack : null,
       })
-      .returning({ id: calls.id });
-    callRowId = inserted[0].id;
+    );
+
+    return NextResponse.json(
+      { error: "Failed to persist call" },
+      { status: 500 }
+    );
   }
 
   const config = await db.query.businessConfig.findFirst();
@@ -278,4 +334,8 @@ export async function POST(request: Request) {
 
 function hasValue(value: string | null | undefined): boolean {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error";
 }
