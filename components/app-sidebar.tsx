@@ -105,6 +105,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
                       isActive={pathname.startsWith(item.href)}
+                      className="data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm data-active:hover:bg-primary/90 data-active:hover:text-primary-foreground"
                     >
                       <item.icon />
                       <span>{item.title}</span>
