@@ -10,6 +10,7 @@ import {
   UserIcon,
   DollarSignIcon,
   SettingsIcon,
+  MessagesSquareIcon,
   LogOutIcon,
 } from "lucide-react";
 import {
@@ -63,6 +64,12 @@ const navItems = [
     title: "Agency users",
     href: "/users",
     icon: UserIcon,
+    roles: ["root", "admin"] as UserRole[],
+  },
+  {
+    title: "Chat Playground",
+    href: "/chat-playground",
+    icon: MessagesSquareIcon,
     roles: ["root", "admin"] as UserRole[],
   },
   {
