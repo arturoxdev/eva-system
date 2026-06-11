@@ -336,3 +336,57 @@ export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   type: text("type").notNull(),
   processedAt: timestamp("processed_at").defaultNow().notNull(),
 });
+
+// ─── Chat (módulo 1 PRD chat embebible) ──────────────────────
+// Esquema base del producto de chat con IA. Prefijo `chat_` para no
+// chocar con `calls`/transcripts.
+
+export const chatMessageRoleEnum = pgEnum("chat_message_role", [
+  "user",
+  "assistant",
+]);
+
+export const chatConversations = pgTable("chat_conversations", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  // TODO(multi-tenant): se añadirá `companyId` nullable con FK a
+  // companies.id en la fase multi-tenant; tabla simple lista para ello.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => chatConversations.id, { onDelete: "cascade" }),
+    role: chatMessageRoleEnum("role").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    // Reconstruye el historial cronológicamente por conversación.
+    index("chat_messages_conversation_created_idx").on(
+      table.conversationId,
+      table.createdAt
+    ),
+  ]
+);
+
+export const chatConversationsRelations = relations(
+  chatConversations,
+  ({ many }) => ({
+    messages: many(chatMessages),
+  })
+);
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  conversation: one(chatConversations, {
+    fields: [chatMessages.conversationId],
+    references: [chatConversations.id],
+  }),
+}));
