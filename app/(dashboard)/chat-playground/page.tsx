@@ -12,11 +12,17 @@ import { ChatPlaygroundClient } from "./chat-playground-client";
  * `X-Conversation-Id` para continuar la conversación.
  *
  * La protección de sesión la hereda del layout `(dashboard)` (redirige a
- * `/login` sin sesión). El gating por rol root/admin es del PR5.
+ * `/login` sin sesión). Además, la página está restringida a agency users
+ * (`root`/`admin`); cualquier otro rol se redirige a `/calls`, replicando el
+ * patrón de `/companies` (módulo 5 / PR5).
  */
 export default async function ChatPlaygroundPage() {
   const session = await auth();
   if (!session) redirect("/login");
+
+  if (session.user.role !== "root" && session.user.role !== "admin") {
+    redirect("/calls");
+  }
 
   return (
     <>
