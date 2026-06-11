@@ -72,11 +72,32 @@ export async function POST(request: Request) {
     });
     companyId = agent?.companyId ?? null;
 
+    if (!agent) {
+      console.warn(
+        "[call-ended] agent_mapping_missing",
+        JSON.stringify({
+          call_id,
+          agent_id,
+        })
+      );
+    }
+
     const existing = await db.query.calls.findFirst({
       where: and(eq(calls.callId, call_id), eq(calls.agentId, agent_id)),
     });
 
     if (existing) {
+      console.log(
+        "[call-ended] existing_call_found",
+        JSON.stringify({
+          call_id,
+          agent_id,
+          call_row_id: existing.id,
+          existing_company_id: existing.companyId,
+          existing_call_status: existing.callStatus,
+        })
+      );
+
       await db
         .update(calls)
         .set({
